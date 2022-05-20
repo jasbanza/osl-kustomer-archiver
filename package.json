@@ -1,0 +1,28 @@
+{
+  "name": "osl-kustomer-archiver",
+  "version": "1.0.0",
+  "description": "Remove old conversations from Kustomer. Preserve stats to Google Sheets",
+  "main": "index.js",
+  "scripts": {
+    "test": "nodemon"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jasbanza/osl-kustomer-archiver.git"
+  },
+  "keywords": [
+    "kustomer",
+    "osl",
+    "osmosis"
+  ],
+  "author": "jasbanza",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jasbanza/osl-kustomer-archiver/issues"
+  },
+  "homepage": "https://github.com/jasbanza/osl-kustomer-archiver#readme",
+  "dependencies": {
+    "api": "^4.5.1",
+    "node-fetch": "^2.6.7"
+  }
+}
