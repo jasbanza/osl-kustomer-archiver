@@ -95,5 +95,10 @@ function formatTags(arrTagIds) {
 
 function formatDateTime(dt) {
   // 21/05/2022 06:57:10
-  return dt.getFullYear() + "/" + (dt.getMonth() + 1) + "/" + dt.getDate() + " " + dt.getHours() + ":" + dt.getMinutes() + ":" + dt.getSeconds();
+  let dtStr = dt.toISOString();
+  dtStr = dtStr.replaceAll("-", "/");
+  dtStr = dtStr.replace("T", " ");
+  dtStr = dtStr.substring(0, dtStr.indexOf("."));
+  return dtStr;
+  //return dt.getFullYear() + "/" + (dt.getMonth() + 1) + "/" + dt.getDate() + " " + dt.getHours() + ":" + dt.getMinutes() + ":" + dt.getSeconds();
 }
