@@ -1,6 +1,6 @@
 {
   "name": "osl-kustomer-archiver",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Remove old conversations from Kustomer. Preserve stats to Google Sheets",
   "main": "index.js",
   "scripts": {

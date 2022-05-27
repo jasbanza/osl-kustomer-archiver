@@ -38,7 +38,7 @@ const out = new ConsoleLogColors();
     const results_sheets_save = await saveToGoogleSheets(arrConvMetadata);
 
     // if there were conversations archived
-    if (results_sheets_save.arrInsertedIds.length > 0 && isArchiveVerified) {
+    if (results_sheets_save.arrInsertedIds.length > 0 && results_sheets_save.isArchiveVerified) {
       out.success(`${results_sheets_save.arrInsertedIds.length} old Kustomer conversation stats were saved to Google Sheets`);
 
       // Delete conversations from Kustomer
@@ -276,11 +276,10 @@ async function insertRows(sheet, arrConversations) {
   }
   if (soFarSoGood) {
     isArchiveVerified = true;
-    out.success("...Saved data looks good!");
+    out.info("...Saved data looks good!");
   } else {
     out.error(`${failCount} record(s) not saved...`);
   }
-
   return {
     arrFetchedIds: arrFetchedIds,
     arrInsertedIds: arrNewIds,
@@ -326,43 +325,43 @@ async function updateGoogleSheets_setDeleted(arrCurrentIds, arrDeletedIds) {
 
 /**
  * UPDATE CELLS by passing object of cellAddress:value
- * cellsToUpdate = { "A1":"some value", "B2":"some other value"}
+ * objCellsToUpdate = { "A1":"some value", "B2":"some other value"}
  */
-async function updateGoogleSheetCells(cellsToUpdate) {
-  if (cellsToUpdate.length > 0) {
-    // SELECT SHEET
-    const doc = new GoogleSpreadsheet(config.GOOGLE.SHEET_ID);
+async function updateGoogleSheetCells(objCellsToUpdate) {
+  // SELECT SHEET
+  const doc = new GoogleSpreadsheet(config.GOOGLE.SHEET_ID);
 
-    // AUTHENTICATE SERVICE ACCOUNT
-    await doc.useServiceAccountAuth({
-      client_email: config.GOOGLE.SERVICE_ACCOUNT_EMAIL,
-      private_key: config.GOOGLE.PRIVATE_KEY,
-    });
+  // AUTHENTICATE SERVICE ACCOUNT
+  await doc.useServiceAccountAuth({
+    client_email: config.GOOGLE.SERVICE_ACCOUNT_EMAIL,
+    private_key: config.GOOGLE.PRIVATE_KEY,
+  });
 
-    try {
-      await doc.loadInfo(); // load document properties and worksheets
-      const sheet = doc.sheetsByTitle["import"]; // Load the "import" sheet into memory
+  try {
+    await doc.loadInfo(); // load document properties and worksheets
+    const sheet = doc.sheetsByTitle["import"]; // Load the "import" sheet into memory
 
-      // SELECT CELLS
-      const arrA1CellAddresses = [];
-      for (var address in cellsToUpdate) {
-        arrA1CellAddresses.push(address);
-      }
-      await sheet.loadCells(arrA1CellAddresses);
-
-      // UPDATE CELLS
-      for (var address in cellsToUpdate) {
-        let cell = sheet.getCellByA1(address);
-        cell.value = cellsToUpdate[address];
-        out.info(`Updating "deletedAt" Date/Time (cell ${address})...`);
-      }
-
-      return sheet.saveUpdatedCells();
-    } catch (e) {
-      out.error("Caught Error");
-      out.error(e.message);
+    // SELECT CELLS
+    const arrA1CellAddresses = [];
+    for (var address in objCellsToUpdate) {
+      arrA1CellAddresses.push(address);
     }
+    await sheet.loadCells(arrA1CellAddresses);
+
+    // UPDATE CELLS
+    for (var address in objCellsToUpdate) {
+      let cell = sheet.getCellByA1(address);
+      cell.value = objCellsToUpdate[address];
+
+      out.info(`Updating "deletedAt" Date/Time (cell ${address})...`);
+    }
+
+    return sheet.saveUpdatedCells();
+  } catch (e) {
+    out.error("Caught Error");
+    out.error(e.message);
   }
+
 }
 
 /**

@@ -16,12 +16,11 @@ Remove old conversations from Kustomer. Preserve stats to Google Sheets
 - [Node.js](#nodejs)
 
 ### Kustomer API:
-- API Key with the following 5 roles:
-  - org.admin.search.read
-  - org.user.search.read
-  - org.user.search_execution.write
-  - org.permission.search_execution.create
+- API Key with the following 4 roles:
   - org.permission.conversation.delete
+  - org.permission.conversation.read
+  - org.permission.search_execution.create
+  - org.permission.tag.read
 
 ### Kustomer Saved Search:
 - Make a Saved Search, and remember to make it publicly viewable in it's settings. Note it's ID (taken from the URL when you edit it) which is used in the config.json
@@ -37,7 +36,7 @@ https://theoephraim.github.io/node-google-spreadsheet/#/getting-started/authenti
 
 ![image](https://user-images.githubusercontent.com/1925470/170743962-f0dba866-883e-4048-a48f-45cb51db82af.png)
 
-### Google Sheets 
+### Google Sheets
 - Create a new Google Sheet
 - Name one of the sheet tabs to "import":
 
