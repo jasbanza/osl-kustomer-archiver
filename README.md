@@ -8,8 +8,11 @@ Remove old conversations from Kustomer. Preserve stats to Google Sheets
 - npm v8.5.5 or later (included with Node.js)
 
 ## Setup
+- [ ] Kustomer API
+- [ ] Google API
+- [ ] 
 
-#### Kustomer API:
+### [Kustomer API:](#kustomer-api)
 - API Key with the following 5 roles:
   - org.admin.search.read
   - org.user.search.read
@@ -17,7 +20,7 @@ Remove old conversations from Kustomer. Preserve stats to Google Sheets
   - org.permission.search_execution.create
   - org.permission.conversation.delete
 
-#### Google API:
+### Google API:
 - Setup a new Google Project and create a "Service account", with this guide:
 
 [Google Developers Console](https://console.developers.google.com/)
@@ -28,7 +31,7 @@ https://theoephraim.github.io/node-google-spreadsheet/#/getting-started/authenti
 
 ![image](https://user-images.githubusercontent.com/1925470/170743962-f0dba866-883e-4048-a48f-45cb51db82af.png)
 
-#### Google Sheets 
+### Google Sheets 
 - Create a new Google Sheet
 - Name one of the sheet tabs to "import":
 
@@ -37,7 +40,7 @@ https://theoephraim.github.io/node-google-spreadsheet/#/getting-started/authenti
 - On the "import" sheet tab, set columns B, E & F to be a datetime format of your choice
 
 
-#### Node.js
+### Node.js
 
 In your Node.js working directory install the package:
 ```npm -i osl-kustomer-archiver```
