@@ -4,6 +4,7 @@
   "description": "Remove old conversations from Kustomer. Preserve stats to Google Sheets",
   "main": "index.js",
   "scripts": {
+    "start": "node index",
     "test": "nodemon"
   },
   "repository": {
@@ -22,8 +23,8 @@
   },
   "homepage": "https://github.com/jasbanza/osl-kustomer-archiver#readme",
   "dependencies": {
-    "api": "^4.5.1",
     "google-spreadsheet": "^3.3.0",
+    "js-console-log-colors": "^1.0.0",
     "node-fetch": "^2.6.7"
   }
 }

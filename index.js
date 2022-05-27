@@ -15,7 +15,7 @@ const {
 
 const {
   ConsoleLogColors
-} = require("./console-log-colors");
+} = require("js-console-log-colors");
 const out = new ConsoleLogColors();
 
 /**
