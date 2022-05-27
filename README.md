@@ -1,7 +1,9 @@
 # osl-kustomer-archiver
 Remove old conversations from Kustomer. Preserve stats to Google Sheets
 
-
+- [Prerequisites](#prerequisites)
+- [Setup](#setup)
+- [Usage](#usage)
 
 ## Prerequisites
 - Node.js v16.15.0 or later
