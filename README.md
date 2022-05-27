@@ -53,7 +53,7 @@ In your Node.js working directory install the package:
 npm -i osl-kustomer-archiver
 ```
 
-Copy ```./config/config-template.json``` file to ```./config/config.json``` and edit the values.
+Copy ```./config/config.template.json``` file to ```./config/config.json``` and edit the values.
 
 Most are self-explanatory, but to execute a saved-search in Kustomer, you need to aquire a ```CSRF token``` from the frontend request when testing the saved search, since they are not accisible directly through the API. This can easily be aquired using devtools, and looking for the "/execute" request
 
