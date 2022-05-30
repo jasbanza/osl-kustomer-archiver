@@ -38,11 +38,14 @@ https://theoephraim.github.io/node-google-spreadsheet/#/getting-started/authenti
 
 ### Google Sheets
 - Create a new Google Sheet
-- Name one of the sheet tabs to "import":
+- Name one of the sheet tabs to "import", and another to "event_log":
 
-![image](https://user-images.githubusercontent.com/1925470/170741510-e852d5c2-0853-4017-8ffe-15bb9a119d57.png)
+![image](https://user-images.githubusercontent.com/1925470/170905759-7127a361-ad7e-44fb-9347-2bb732e572a2.png)
+
+If you protect the sheets, make sure to give the Google Service Account permission to edit!
 
 - On the "import" sheet tab, set columns B, E & F to be a datetime format of your choice
+- On the "event_log" sheet tab, set column B to be a datetime format of your choice
 - Share the google sheet with the Service Account email address as per the [Google API Guide](#google-api)
 
 ### Node.js
