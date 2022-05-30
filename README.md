@@ -1,5 +1,5 @@
 # osl-kustomer-archiver
-Remove old conversations from Kustomer. Preserve stats to Google Sheets
+Remove old conversations from Kustomer. Preserves stats to Google Sheets. Keeps an event log of what was done.
 
 - [Prerequisites](#prerequisites)
 - [Setup](#setup)
