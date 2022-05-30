@@ -1,5 +1,5 @@
 # osl-kustomer-archiver
-Remove old conversations from Kustomer. Preserve stats to Google Sheets
+Remove old conversations from Kustomer. Preserves stats to Google Sheets. Keeps an event log of what was done.
 
 - [Prerequisites](#prerequisites)
 - [Setup](#setup)
@@ -38,11 +38,14 @@ https://theoephraim.github.io/node-google-spreadsheet/#/getting-started/authenti
 
 ### Google Sheets
 - Create a new Google Sheet
-- Name one of the sheet tabs to "import":
+- Name one of the sheet tabs to "import", and another to "event_log":
 
-![image](https://user-images.githubusercontent.com/1925470/170741510-e852d5c2-0853-4017-8ffe-15bb9a119d57.png)
+![image](https://user-images.githubusercontent.com/1925470/170905759-7127a361-ad7e-44fb-9347-2bb732e572a2.png)
+
+If you protect the sheets, make sure to give the Google Service Account permission to edit!
 
 - On the "import" sheet tab, set columns B, E & F to be a datetime format of your choice
+- On the "event_log" sheet tab, set column B to be a datetime format of your choice
 - Share the google sheet with the Service Account email address as per the [Google API Guide](#google-api)
 
 ### Node.js
@@ -54,13 +57,26 @@ npm -i osl-kustomer-archiver
 
 Copy ```./config/config.template.json``` file to ```./config/config.json``` and edit the values.
 
-Most are self-explanatory, but to execute a saved-search in Kustomer, you need to aquire a ```CSRF token``` from the frontend request when testing the saved search, since they are not accisible directly through the API. This can easily be aquired using devtools, and looking for the "/execute" request
+Most are self-explanatory.
+
+Firstly, set ```ENVIRONMENT.NAME``` accordingly.
+
+If there is an unexpected error, setting ```DEBUG_MODE``` to ```true``` will show some verbose variable information in the terminal output.
+
+
+To execute a saved-search in Kustomer, you need to aquire a ```CSRF token``` from the frontend request when testing the saved search, since they are not accisible directly through the API. This can easily be aquired using devtools, and looking for the "/execute" request
 
 The ```SHEET_ID``` is simply the id in the URL when you open the google sheet:
 https://docs.google.com/spreadsheets/d/ ***THIS_PART_HERE*** /edit
 
+
+
 ```json
 {
+  "ENVIRONMENT": {
+    "NAME": "My Environment",
+    "DEBUG_MODE": false
+  },
   "KUSTOMER": {
     "API_KEY": "Get from Kustomer settings",
     "HEADER_CSRF_TOKEN": "Copy from frontend request",
@@ -73,6 +89,7 @@ https://docs.google.com/spreadsheets/d/ ***THIS_PART_HERE*** /edit
     "SHEET_ID": "the long ID in the sheets URL"
   }
 }
+
 ```
 
 
