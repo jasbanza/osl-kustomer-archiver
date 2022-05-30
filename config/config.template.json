@@ -1,4 +1,8 @@
 {
+  "ENVIRONMENT": {
+    "NAME": "My Environment",
+    "DEBUG_MODE": false
+  },
   "KUSTOMER": {
     "API_KEY": "Get from Kustomer settings",
     "HEADER_CSRF_TOKEN": "Copy from frontend request",

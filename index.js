@@ -18,62 +18,87 @@ const {
 } = require("js-console-log-colors");
 const out = new ConsoleLogColors();
 
+const arrEventLog = [];
+
 /**
  * Main function
  */
 (async function() {
+  let countToBeDeleted = 0;
+  let countConfirmedDeleted = 0;
+  let countNotSaved = 0;
+  let successOrFailure = "SUCCESS";
+  try {
+    debug("Main (async function() {...}());");
+    // Retrieve relevant support conversation metadata using Kustomer API
+    out.command("1. Fetching Kustomer conversation metadata...");
+    const arrConvMetadata = await getKustomerConversationMetadata();
+    countToBeDeleted = arrConvMetadata.length;
+    if (countToBeDeleted == 0) {
+      out.info("No old conversations found.");
+    } else {
+      out.info(`${countToBeDeleted} old conversations found needing deletion.`);
 
-  // Retrieve relevant support conversation metadata using Kustomer API
-  out.command("1. Fetching Kustomer conversation metadata...");
-  const arrConvMetadata = await getKustomerConversationMetadata();
-
-  if (arrConvMetadata.length == 0) {
-    out.info("No old conversations found.");
-  } else {
-    out.info(`${arrConvMetadata.length} old conversations found needing deletion.`);
-
-    // Save to Google Sheets
-    out.ln();
-    out.command("2. Checking google sheets...");
-    const results_sheets_save = await saveToGoogleSheets(arrConvMetadata);
-
-    // if there were conversations archived
-    if (results_sheets_save.arrInsertedIds.length > 0 && results_sheets_save.isArchiveVerified) {
-      out.success(`${results_sheets_save.arrInsertedIds.length} old Kustomer conversation stats were saved to Google Sheets`);
-
-      // Delete conversations from Kustomer
+      // Save to Google Sheets
       out.ln();
-      out.command("3. Deleting Kustomer conversations...");
-      await deleteConversationsFromKustomer(results_sheets_save.arrInsertedIds);
+      out.command("2. Checking google sheets...");
+      const results_sheets_save = await saveToGoogleSheets(arrConvMetadata);
 
-      // Confirm deleted from Kustomer
-      out.ln();
-      out.command("4. Confirming deletion from Kustomer...");
-      const arrDeletedIds = await confirmDeletedFromKustomer(results_sheets_save.arrInsertedIds);
-      if (arrConvMetadata.length == arrDeletedIds.length) {
-        out.success(`${arrDeletedIds.length} of ${arrConvMetadata.length} old conversation(s) successfully deleted from Kustomer`);
-      } else {
+      // if there were conversations archived
+      if (results_sheets_save.arrInsertedIds.length > 0 && results_sheets_save.isArchiveVerified) {
+        out.success(`${results_sheets_save.arrInsertedIds.length} old Kustomer conversation stats were saved to Google Sheets`);
+
+        // Delete conversations from Kustomer
         out.ln();
-        out.error(`Attention! Only ${arrDeletedIds.length} of ${arrConvMetadata.length} old conversation(s) were deleted from Kustomer!`);
-        out.warn("Please try re-running this script again manually, or troubleshoot the issue.");
+        out.command("3. Deleting Kustomer conversations...");
+        await deleteConversationsFromKustomer(results_sheets_save.arrInsertedIds);
+
+        // Confirm deleted from Kustomer
+        out.ln();
+        out.command("4. Confirming deletion from Kustomer...");
+        const arrDeletedIds = await confirmDeletedFromKustomer(results_sheets_save.arrInsertedIds);
+        countConfirmedDeleted = arrDeletedIds.length;
+        if (countToBeDeleted == countConfirmedDeleted) {
+          out.success(`${arrDeletedIds.length} of ${countToBeDeleted} old conversation(s) successfully deleted from Kustomer`);
+        } else {
+          out.ln();
+          out.error(`Attention! Only ${countConfirmedDeleted} of ${countToBeDeleted} old conversation(s) were deleted from Kustomer!`);
+          out.warn("Please try re-running this script again manually, or troubleshoot the issue.");
+          successOrFailure = "FAILURE";
+        }
+        // update google sheets "deletedAt" column for the affected rows
+        out.ln();
+        out.command("5. Updating Google Sheet with deletion time...");
+        await updateGoogleSheets_setDeleted(results_sheets_save.arrCurrentIds, arrDeletedIds);
+        out.ln();
+        out.warn("Please confirm that the Google Sheet has been successfully updated.");
+
+      } else if (results_sheets_save.failCount > 0) {
+        out.error(`Unable to save ${results_sheets_save.failCount} records to Google Sheets. Place solved me ser!`);
+        successOrFailure = "FAILURE";
+        countNotSaved = results_sheets_save.failCount;
       }
-      // update google sheets "deletedAt" column for the affected rows
-      out.ln();
-      out.command("5. Updating Google Sheet with deletion time...");
-      await updateGoogleSheets_setDeleted(results_sheets_save.arrCurrentIds, arrDeletedIds);
-      out.ln();
-      out.warn("Please confirm that the Google Sheet has been successfully updated.");
-
-    } else if (results_sheets_save.failCount > 0) {
-      out.error(`Unable to save ${results_sheets_save.failCount} records to Google Sheets. Place solved me ser!`);
     }
-    //  else {
-    //   out.warn("No old Kustomer records found for deletion.");
-    // }
-
+  } catch (e) {
+    out.error("Error in Main function (IIFE):");
+    out.error(e.message);
+  } finally {
+    out.ln();
+    out.info("Saving event log...");
+    let logMsg = "";
+    if (countToBeDeleted > 0) {
+      logMsg += "Deleted: " + countConfirmedDeleted + " out of " + countToBeDeleted + " conversations from Kustomer.";
+      if (countNotSaved > 0) {
+        logMsg += " Unable to save " + countNotSaved + " conversation's stats to Google Sheets";
+      }
+    } else {
+      logMsg = "No conversations found for deletion.";
+    }
+    event_log(successOrFailure, "ARCHIVER", "Run completed", logMsg);
+    await saveEventLog();
+    out.ln();
+    out.success("done!");
   }
-  out.ln();
-  out.success("done!");
 }());
 
 /**
@@ -81,6 +106,8 @@ const out = new ConsoleLogColors();
  * @return {Array} [formatted conversation metadata to archive]
  */
 async function getKustomerConversationMetadata() {
+  debug("getKustomerConversationMetadata()");
+
   const arr_metadata_kustomerConversations = []; // conversations to save to Google Sheets and delete from Kustomer
 
   // Lookup tags from Kustomer API
@@ -150,6 +177,9 @@ async function getKustomerConversationMetadata() {
  * @return {Object} Success/failure object
  */
 async function saveToGoogleSheets(arrConversations) {
+  debug("saveToGoogleSheets()");
+  debug("arg arrConversations:");
+  debug(arrConversations);
 
   // SELECT SHEET
   const doc = new GoogleSpreadsheet(config.GOOGLE.SHEET_ID);
@@ -180,6 +210,10 @@ async function saveToGoogleSheets(arrConversations) {
 
 /* ADD NECESSARY HEADERS TO SHEET */
 async function doHeaders(sheet, arrConversations) {
+  debug("doHeaders()");
+  debug("arrConversations:");
+  debug(arrConversations);
+
   let arrHeaderValues = [];
   let hasUpdates = false;
   try {
@@ -217,10 +251,14 @@ async function doHeaders(sheet, arrConversations) {
 
 /* ADD NEW ROWS, avoiding duplicates, verify what was added */
 async function insertRows(sheet, arrConversations) {
+  debug("insertRows(sheet, arrConversations)");
+  debug("arrConversations:");
+  debug(arrConversations);
 
   const arrRowsToInsert = [];
   let arrCurrentIds = [];
   const arrFetchedIds = [];
+  let arrInsertedIds = [];
 
   // get existing ids
   out.info("Reading existing rows...");
@@ -272,17 +310,22 @@ async function insertRows(sheet, arrConversations) {
     if (!arrCurrentIds.includes(newId)) {
       soFarSoGood = false;
       failCount++;
+    } else {
+      arrInsertedIds.push(newId);
     }
   }
   if (soFarSoGood) {
     isArchiveVerified = true;
     out.info("...Saved data looks good!");
+    event_log("SUCCESS", "Google Sheets", "Rows Inserted", "Inserted " + arrInsertedIds.length + " conversations: " + arrInsertedIds.join());
   } else {
     out.error(`${failCount} record(s) not saved...`);
+    event_log("FAIL", "Google Sheets", "Not all rows inserted", "Inserted " + arrInsertedIds.length + "/" + arrNewIds.length + " conversations: " + arrInsertedIds.join());
   }
+
   return {
     arrFetchedIds: arrFetchedIds,
-    arrInsertedIds: arrNewIds,
+    arrInsertedIds: arrInsertedIds,
     arrCurrentIds: arrCurrentIds,
     isArchiveVerified: isArchiveVerified,
     failCount: failCount
@@ -290,15 +333,29 @@ async function insertRows(sheet, arrConversations) {
 }
 
 async function deleteConversationsFromKustomer(arrConversationIds) {
+  debug("deleteConversationsFromKustomer(arrConversationIds)");
+  debug("arg arrConversationIds:");
+  debug(arrConversationIds);
   // Delete kustomer conversations
   for (var conversationId of arrConversationIds) {
     out.info("...");
-    await kustomer_conversation_deleteById(conversationId);
+    try {
+      await kustomer_conversation_deleteById(conversationId);
+      event_log("SUCCESS", "Kustomer", "Delete Conversation", "conversationId: " + conversationId);
+    } catch (e) {
+      out.error("Failed to delete conversation");
+      out.error(e.message);
+      event_log("FAIL", "Kustomer", "Delete Conversation", "conversationId: " + conversationId);
+    }
   }
 }
 
 /* confirm deleted conversations & return array of conversationIds that were affected */
 async function confirmDeletedFromKustomer(arrConversationIds) {
+  debug("confirmDeletedFromKustomer(arrConversationIds)");
+  debug("arg arrConversationIds:");
+  debug(arrConversationIds);
+
   const arrDeletedConversationIds = [];
   for (var conversationId of arrConversationIds) {
     out.info("...");
@@ -314,6 +371,12 @@ async function confirmDeletedFromKustomer(arrConversationIds) {
 }
 
 async function updateGoogleSheets_setDeleted(arrCurrentIds, arrDeletedIds) {
+  debug("updateGoogleSheets_setDeleted(arrCurrentIds, arrDeletedIds)");
+  debug("arg arrCurrentIds:");
+  debug(arrCurrentIds);
+  debug("arg arrDeletedIds:");
+  debug(arrDeletedIds);
+
   const objCellsToUpdate = {};
   for (var i = 0; i < arrCurrentIds.length; i++) {
     if (arrDeletedIds.includes(arrCurrentIds[i])) {
@@ -328,6 +391,9 @@ async function updateGoogleSheets_setDeleted(arrCurrentIds, arrDeletedIds) {
  * objCellsToUpdate = { "A1":"some value", "B2":"some other value"}
  */
 async function updateGoogleSheetCells(objCellsToUpdate) {
+  debug("updateGoogleSheetCells(objCellsToUpdate)");
+  debug("arg objCellsToUpdate:");
+  debug(objCellsToUpdate);
   // SELECT SHEET
   const doc = new GoogleSpreadsheet(config.GOOGLE.SHEET_ID);
 
@@ -356,7 +422,9 @@ async function updateGoogleSheetCells(objCellsToUpdate) {
       out.info(`Updating "deletedAt" Date/Time (cell ${address})...`);
     }
 
-    return sheet.saveUpdatedCells();
+    await sheet.saveUpdatedCells();
+    event_log("SUCCESS", "Google Sheets", "Update Cells", arrA1CellAddresses.join());
+    return arrA1CellAddresses;
   } catch (e) {
     out.error("Caught Error");
     out.error(e.message);
@@ -369,6 +437,7 @@ async function updateGoogleSheetCells(objCellsToUpdate) {
  * @return {Object} [tags object with each property being a tag id, and each value being tag name string]
  */
 async function createTagLookup() {
+  debug("createTagLookup()");
   const obj_tagLookup = {};
   await kustomer_tags_get()
     .then((res) => res.json())
@@ -378,6 +447,52 @@ async function createTagLookup() {
       }
     });
   return obj_tagLookup;
+}
+
+
+
+/* === DEBUGGING & EVENT LOG === */
+function debug(txt) {
+  if (config.ENVIRONMENT.DEBUG_MODE) {
+    out.debug(">>> DEBUG: " + txt);
+  }
+}
+
+function event_log(status, resource, action, details) {
+  const time = formatDateTime(new Date(Date.now()));
+  arrEventLog.push({
+    "environment": config.ENVIRONMENT.NAME,
+    "time": time,
+    "status": status,
+    "resource": resource,
+    "action": action,
+    "details": details
+  });
+}
+
+async function saveEventLog() {
+  debug("saveEventLog()");
+  const doc = new GoogleSpreadsheet(config.GOOGLE.SHEET_ID);
+
+  // AUTHENTICATE SERVICE ACCOUNT
+  await doc.useServiceAccountAuth({
+    client_email: config.GOOGLE.SERVICE_ACCOUNT_EMAIL,
+    private_key: config.GOOGLE.PRIVATE_KEY,
+  });
+
+
+  try {
+    await doc.loadInfo(); // load document properties and worksheets
+    const sheet = doc.sheetsByTitle["event_log"]; // Load the "import" sheet into memory
+
+    await sheet.setHeaderRow(["environment", "time", "status", "resource", "action", "details"]);
+
+    return await sheet.addRows(arrEventLog);
+
+  } catch (e) {
+    out.error("Error caught:");
+    out.error(e.message);
+  }
 }
 
 
@@ -405,6 +520,7 @@ function formatDateTime(dt) {
 
 /* === FETCH FUNCTIONS === */
 function kustomer_conversations_get() {
+  debug("kustomer_conversations_get()");
   return fetch("https://osmosis.api.kustomerapp.com/v1/customers/searches/" + config.KUSTOMER.SAVED_SEARCH_ID + "/execution?page=1&pageSize=30&source=current-search-poller&include=customers%2CsatisfactionResponse&trackTotalHits=10000&client-request-id=93a57a32-f983-436c-917d-02bc337d9717", {
     "headers": {
       "accept": "application/json",
@@ -421,6 +537,7 @@ function kustomer_conversations_get() {
 }
 
 function kustomer_tags_get() {
+  debug("kustomer_tags_get()");
   return fetch("https://osmosis.api.kustomerapp.com/v1/tags?deleted=false&page=1&pageSize=50", {
     "headers": {
       "accept": "application/json",
@@ -437,6 +554,9 @@ function kustomer_tags_get() {
 }
 
 function kustomer_conversation_deleteById(conversationId) {
+  debug("kustomer_conversation_deleteById(conversationId)");
+  debug("arg conversationId:");
+  debug(conversationId);
   return fetch('https://api.kustomerapp.com/v1/conversations/' + conversationId, {
     method: 'DELETE',
     headers: {
@@ -447,6 +567,9 @@ function kustomer_conversation_deleteById(conversationId) {
 }
 
 function kustomer_conversation_getById(conversationId) {
+  debug("kustomer_conversation_getById(conversationId)");
+  debug("arg conversationId:");
+  debug(conversationId);
   return fetch('https://api.kustomerapp.com/v1/conversations/' + conversationId, {
     method: 'GET',
     headers: {
