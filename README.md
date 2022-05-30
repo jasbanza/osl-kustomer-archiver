@@ -54,13 +54,26 @@ npm -i osl-kustomer-archiver
 
 Copy ```./config/config.template.json``` file to ```./config/config.json``` and edit the values.
 
-Most are self-explanatory, but to execute a saved-search in Kustomer, you need to aquire a ```CSRF token``` from the frontend request when testing the saved search, since they are not accisible directly through the API. This can easily be aquired using devtools, and looking for the "/execute" request
+Most are self-explanatory.
+
+Firstly, set ```ENVIRONMENT.NAME``` accordingly.
+
+If there is an unexpected error, setting ```DEBUG_MODE``` to ```true``` will show some verbose variable information in the terminal output.
+
+
+To execute a saved-search in Kustomer, you need to aquire a ```CSRF token``` from the frontend request when testing the saved search, since they are not accisible directly through the API. This can easily be aquired using devtools, and looking for the "/execute" request
 
 The ```SHEET_ID``` is simply the id in the URL when you open the google sheet:
 https://docs.google.com/spreadsheets/d/ ***THIS_PART_HERE*** /edit
 
+
+
 ```json
 {
+  "ENVIRONMENT": {
+    "NAME": "My Environment",
+    "DEBUG_MODE": false
+  },
   "KUSTOMER": {
     "API_KEY": "Get from Kustomer settings",
     "HEADER_CSRF_TOKEN": "Copy from frontend request",
@@ -73,6 +86,7 @@ https://docs.google.com/spreadsheets/d/ ***THIS_PART_HERE*** /edit
     "SHEET_ID": "the long ID in the sheets URL"
   }
 }
+
 ```
 
 
