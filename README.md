@@ -136,10 +136,10 @@ $ sudo crontab -e
 
 #### Every Hour
 ```bash
-0 * * * * node /path/to/this/repo/index.js >/dev/null 2>&1
+0 * * * * /path/to/node /path/to/this/repo/index.js >/dev/null 2>&1
 ```
 
 #### 2pm Every Day
 ```bash
-0 14 * * * node /path/to/this/repo/index.js >/dev/null 2>&1
+0 14 * * * /path/to/node /path/to/this/repo/index.js >/dev/null 2>&1
 ```
