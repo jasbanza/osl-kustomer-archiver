@@ -8,10 +8,10 @@ Remove old conversations from Kustomer. Preserves stats to Google Sheets. Keeps 
 
 ## Screenshots
 
-#### Imported Data:
+#### Imported stats (using demo data):
 ![image](https://user-images.githubusercontent.com/1925470/170906841-60a569fb-509a-4f1a-ae6e-0ab0938369cd.png)
 
-#### Event Log:
+#### Event Log (using demo data):
 ![image](https://user-images.githubusercontent.com/1925470/170907102-5c1bf0fd-0115-4673-a127-a8150b171e20.png)
 
 ## Prerequisites
