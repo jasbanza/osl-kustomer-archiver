@@ -59,9 +59,15 @@ If you protect the sheets, make sure to give the Google Service Account permissi
 
 ### Node.js
 
-In your Node.js working directory install the package:
+Clone this repo:
 ```bash
-npm -i osl-kustomer-archiver
+git clone https://github.com/jasbanza/osl-kustomer-archiver.git
+```
+
+In your cloned directory, install dependencies:
+```bash
+cd osl-kustomer-archiver
+npm install
 ```
 
 Copy ```./config/config.template.json``` file to ```./config/config.json``` and edit the values.
@@ -114,18 +120,18 @@ https://docs.google.com/spreadsheets/d/ ***THIS_PART_HERE*** /edit
 
 ### Run manually:
 ```bash
-node index.js
+$ node index.js
 ```
 OR
 ```bash
-npm start
+$ npm start
 ```
 
 ### Run periodically:
 
 - Open crontab
 ```bash
-$ crontab -e
+$ sudo crontab -e
 ```
 
 #### Every Hour
