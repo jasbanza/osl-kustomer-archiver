@@ -6,16 +6,12 @@
  * - Updates google sheet to indicate deletion success
  */
 
-'use strict';
+"use strict";
 const config = require("./config/config.json");
 const fetch = require("node-fetch");
-const {
-  GoogleSpreadsheet
-} = require('google-spreadsheet');
+const { GoogleSpreadsheet } = require("google-spreadsheet");
 
-const {
-  ConsoleLogColors
-} = require("js-console-log-colors");
+const { ConsoleLogColors } = require("js-console-log-colors");
 const out = new ConsoleLogColors();
 
 const arrEventLog = [];
@@ -23,7 +19,7 @@ const arrEventLog = [];
 /**
  * Main function
  */
-(async function() {
+(async function () {
   let countToBeDeleted = 0;
   let countConfirmedDeleted = 0;
   let countNotSaved = 0;
@@ -45,40 +41,65 @@ const arrEventLog = [];
       const results_sheets_save = await saveToGoogleSheets(arrConvMetadata);
 
       // if there were conversations archived
-      if (results_sheets_save.arrInsertedIds.length > 0 && results_sheets_save.isArchiveVerified) {
-        out.success(`${results_sheets_save.arrInsertedIds.length} old Kustomer conversation stats were saved to Google Sheets`);
+      if (
+        results_sheets_save.arrInsertedIds.length > 0 &&
+        results_sheets_save.isArchiveVerified
+      ) {
+        out.success(
+          `${results_sheets_save.arrInsertedIds.length} old Kustomer conversation stats were saved to Google Sheets`
+        );
 
         // Delete conversations from Kustomer
         out.ln();
         out.command("3. Deleting Kustomer conversations...");
-        await deleteConversationsFromKustomer(results_sheets_save.arrInsertedIds);
+        await deleteConversationsFromKustomer(
+          results_sheets_save.arrInsertedIds
+        );
 
         // Confirm deleted from Kustomer
         out.ln();
         out.command("4. Confirming deletion from Kustomer...");
-        const arrDeletedIds = await confirmDeletedFromKustomer(results_sheets_save.arrInsertedIds);
+        const arrDeletedIds = await confirmDeletedFromKustomer(
+          results_sheets_save.arrInsertedIds
+        );
         countConfirmedDeleted = arrDeletedIds.length;
         if (countToBeDeleted == countConfirmedDeleted) {
-          out.success(`${arrDeletedIds.length} of ${countToBeDeleted} old conversation(s) successfully deleted from Kustomer`);
+          out.success(
+            `${arrDeletedIds.length} of ${countToBeDeleted} old conversation(s) successfully deleted from Kustomer`
+          );
         } else {
           out.ln();
-          out.error(`Attention! Only ${countConfirmedDeleted} of ${countToBeDeleted} old conversation(s) were deleted from Kustomer!`);
-          out.warn("Please try re-running this script again manually, or troubleshoot the issue.");
+          out.error(
+            `Attention! Only ${countConfirmedDeleted} of ${countToBeDeleted} old conversation(s) were deleted from Kustomer!`
+          );
+          out.warn(
+            "Please try re-running this script again manually, or troubleshoot the issue."
+          );
           successOrFailure = "FAILURE";
         }
         // update google sheets "deletedAt" column for the affected rows
         out.ln();
         out.command("5. Updating Google Sheet with deletion time...");
-        await updateGoogleSheets_setDeleted(results_sheets_save.arrCurrentIds, arrDeletedIds);
+        await updateGoogleSheets_setDeleted(
+          results_sheets_save.arrCurrentIds,
+          arrDeletedIds
+        );
         out.ln();
-        out.warn("Please confirm that the Google Sheet has been successfully updated.");
-
+        out.warn(
+          "Please confirm that the Google Sheet has been successfully updated."
+        );
       } else if (results_sheets_save.failCount > 0) {
-        out.error(`Unable to save ${results_sheets_save.failCount} records to Google Sheets. Place solved me ser!`);
+        out.error(
+          `Unable to save ${results_sheets_save.failCount} records to Google Sheets. Place solved me ser!`
+        );
         successOrFailure = "FAILURE";
         countNotSaved = results_sheets_save.failCount;
       }
     }
+
+    // get total amount of kustomer tickets (for reporting purposes) and save to google sheets
+    out.command("6. Checking remaining tickets on Kustomer");
+    await recordUnarchivedTicketCountToGoogleSheets();
   } catch (e) {
     out.error("Error in Main function (IIFE):");
     out.error(e.message);
@@ -87,9 +108,17 @@ const arrEventLog = [];
     out.info("Saving event log...");
     let logMsg = "";
     if (countToBeDeleted > 0) {
-      logMsg += "Deleted: " + countConfirmedDeleted + " out of " + countToBeDeleted + " conversations from Kustomer.";
+      logMsg +=
+        "Deleted: " +
+        countConfirmedDeleted +
+        " out of " +
+        countToBeDeleted +
+        " conversations from Kustomer.";
       if (countNotSaved > 0) {
-        logMsg += " Unable to save " + countNotSaved + " conversation's stats to Google Sheets";
+        logMsg +=
+          " Unable to save " +
+          countNotSaved +
+          " conversation's stats to Google Sheets";
       }
     } else {
       logMsg = "No conversations found for deletion.";
@@ -99,7 +128,7 @@ const arrEventLog = [];
     out.ln();
     out.success("done!");
   }
-}());
+})();
 
 /**
  * Get conversations from Kustomer API
@@ -114,21 +143,23 @@ async function getKustomerConversationMetadata() {
   const obj_tagLookup = await createTagLookup();
 
   // execute kustomer conversation search
-  await kustomer_conversations_get()
+  await kustomer_conversations_get_old()
     .then((res) => res.json())
     .then((json) => {
       // Format each raw conversation object
       if (json.data) {
         for (var raw of json.data) {
           try {
-            let dt_createdAt = formatDateTime(new Date(raw.attributes.createdAt));
+            let dt_createdAt = formatDateTime(
+              new Date(raw.attributes.createdAt)
+            );
             let dt_endedAt = formatDateTime(new Date(raw.attributes.endedAt));
             let obj_formatted = {
-              "id": raw.id,
-              "channel": raw.attributes.channels[0],
-              "messageCount": raw.attributes.messageCount,
-              "createdAt": dt_createdAt,
-              "endedAt": dt_endedAt
+              id: raw.id,
+              channel: raw.attributes.channels[0],
+              messageCount: raw.attributes.messageCount,
+              createdAt: dt_createdAt,
+              endedAt: dt_endedAt,
             };
 
             // add custom properties
@@ -140,16 +171,20 @@ async function getKustomerConversationMetadata() {
                 obj_formatted.device = raw.attributes.custom.deviceStr;
               }
               if (raw.attributes.custom.reasonForSupportStr) {
-                obj_formatted.reasonForSupport = raw.attributes.custom.reasonForSupportStr;
+                obj_formatted.reasonForSupport =
+                  raw.attributes.custom.reasonForSupportStr;
               }
               if (raw.attributes.custom.fromWhichChainStr) {
-                obj_formatted.fromWhichChain = raw.attributes.custom.fromWhichChainStr;
+                obj_formatted.fromWhichChain =
+                  raw.attributes.custom.fromWhichChainStr;
               }
               if (raw.attributes.custom.whichAssetsStr) {
-                obj_formatted.whichAssets = raw.attributes.custom.whichAssetsStr;
+                obj_formatted.whichAssets =
+                  raw.attributes.custom.whichAssetsStr;
               }
               if (raw.attributes.custom.poolOrParingStr) {
-                obj_formatted.poolOrParing = raw.attributes.custom.poolOrParingStr;
+                obj_formatted.poolOrParing =
+                  raw.attributes.custom.poolOrParingStr;
               }
             }
 
@@ -190,7 +225,6 @@ async function saveToGoogleSheets(arrConversations) {
     private_key: config.GOOGLE.PRIVATE_KEY,
   });
 
-
   try {
     await doc.loadInfo(); // load document properties and worksheets
     const sheet = doc.sheetsByTitle["import"]; // Load the "import" sheet into memory
@@ -201,9 +235,58 @@ async function saveToGoogleSheets(arrConversations) {
     // 2. ADD NEW ROWS
     const obj_results = await insertRows(sheet, arrConversations);
     return obj_results;
-
   } catch (e) {
     out.error("Error caught:");
+    out.error(e.message);
+  }
+}
+
+/*  */
+async function recordUnarchivedTicketCountToGoogleSheets() {
+  debug("recordUnarchivedTicketCountToGoogleSheets()");
+
+  let totalUnarchivedCount = 0;
+  // execute kustomer conversation search
+  await kustomer_conversations_get_all()
+    .then((res) => res.json())
+    .then((json) => {
+      if (json?.meta?.total) {
+        totalUnarchivedCount = json.meta.total;
+      }
+    });
+
+  // SELECT SHEET
+  const doc = new GoogleSpreadsheet(config.GOOGLE.SHEET_ID);
+
+  // AUTHENTICATE SERVICE ACCOUNT
+  await doc.useServiceAccountAuth({
+    client_email: config.GOOGLE.SERVICE_ACCOUNT_EMAIL,
+    private_key: config.GOOGLE.PRIVATE_KEY,
+  });
+
+  try {
+    await doc.loadInfo(); // load document properties and worksheets
+    const sheet = doc.sheetsByTitle["OSL Helpdesk Stats"]; // Load the "import" sheet into memory
+
+    // SELECT CELL
+    await sheet.loadCells("C20");
+
+    // UPDATE CELLS
+    let cell = sheet.getCellByA1("C20");
+    cell.value = totalUnarchivedCount;
+    out.info(
+      `Updating "Ticket Count: Less than 2 weeks old" ("OSL Helpdesk Stats" cell C20)...`
+    );
+
+    await sheet.saveUpdatedCells();
+    event_log(
+      "SUCCESS",
+      "Google Sheets",
+      "Update Cells",
+      "OSL Helpdesk Stats: C20"
+    );
+  } catch (e) {
+    out.error("Caught Error");
     out.error(e.message);
   }
 }
@@ -217,7 +300,6 @@ async function doHeaders(sheet, arrConversations) {
   let arrHeaderValues = [];
   let hasUpdates = false;
   try {
-
     out.info("Checking if additional columns need to be added...");
     const headerRow = await sheet.loadHeaderRow();
     arrHeaderValues = sheet.headerValues;
@@ -226,10 +308,22 @@ async function doHeaders(sheet, arrConversations) {
     out.info("+ Adding default column headers");
 
     // If there aren't headers in the sheet, take these defaults:
-    arrHeaderValues = ["id", "deletedAt", "messageCount", "channel", "createdAt", "endedAt", "device", "reasonForSupport", "whichAssets", "fromWhichChain", "poolOrParing", "tags"];
+    arrHeaderValues = [
+      "id",
+      "deletedAt",
+      "messageCount",
+      "channel",
+      "createdAt",
+      "endedAt",
+      "device",
+      "reasonForSupport",
+      "whichAssets",
+      "fromWhichChain",
+      "poolOrParing",
+      "tags",
+    ];
     hasUpdates = true;
   }
-
 
   // also add any extra headers (e.g. custom tags)
   for (var conv of arrConversations) {
@@ -275,7 +369,7 @@ async function insertRows(sheet, arrConversations) {
 
   // check which new ids have yet to be saved
   const ex = new Set(arrCurrentIds);
-  const arrNewIds = [...new Set(arrFetchedIds.filter(x => !ex.has(x)))];
+  const arrNewIds = [...new Set(arrFetchedIds.filter((x) => !ex.has(x)))];
 
   if (arrNewIds.length == 0) {
     out.info("All records are accounted for.");
@@ -288,7 +382,6 @@ async function insertRows(sheet, arrConversations) {
         arrRowsToInsert.push(conv);
       }
     }
-
 
     out.info(`Inserting ${arrRowsToInsert.length} new rows(s)...`);
 
@@ -317,10 +410,28 @@ async function insertRows(sheet, arrConversations) {
   if (soFarSoGood) {
     isArchiveVerified = true;
     out.info("...Saved data looks good!");
-    event_log("SUCCESS", "Google Sheets", "Rows Inserted", "Inserted " + arrInsertedIds.length + " conversations: " + arrInsertedIds.join());
+    event_log(
+      "SUCCESS",
+      "Google Sheets",
+      "Rows Inserted",
+      "Inserted " +
+        arrInsertedIds.length +
+        " conversations: " +
+        arrInsertedIds.join()
+    );
   } else {
     out.error(`${failCount} record(s) not saved...`);
-    event_log("FAIL", "Google Sheets", "Not all rows inserted", "Inserted " + arrInsertedIds.length + "/" + arrNewIds.length + " conversations: " + arrInsertedIds.join());
+    event_log(
+      "FAIL",
+      "Google Sheets",
+      "Not all rows inserted",
+      "Inserted " +
+        arrInsertedIds.length +
+        "/" +
+        arrNewIds.length +
+        " conversations: " +
+        arrInsertedIds.join()
+    );
   }
 
   return {
@@ -328,7 +439,7 @@ async function insertRows(sheet, arrConversations) {
     arrInsertedIds: arrInsertedIds,
     arrCurrentIds: arrCurrentIds,
     isArchiveVerified: isArchiveVerified,
-    failCount: failCount
+    failCount: failCount,
   };
 }
 
@@ -341,11 +452,21 @@ async function deleteConversationsFromKustomer(arrConversationIds) {
     out.info("...");
     try {
       await kustomer_conversation_deleteById(conversationId);
-      event_log("SUCCESS", "Kustomer", "Delete Conversation", "conversationId: " + conversationId);
+      event_log(
+        "SUCCESS",
+        "Kustomer",
+        "Delete Conversation",
+        "conversationId: " + conversationId
+      );
     } catch (e) {
       out.error("Failed to delete conversation");
       out.error(e.message);
-      event_log("FAIL", "Kustomer", "Delete Conversation", "conversationId: " + conversationId);
+      event_log(
+        "FAIL",
+        "Kustomer",
+        "Delete Conversation",
+        "conversationId: " + conversationId
+      );
     }
   }
 }
@@ -362,7 +483,12 @@ async function confirmDeletedFromKustomer(arrConversationIds) {
     await kustomer_conversation_getById(conversationId)
       .then((res) => res.json())
       .then((json) => {
-        if (json.errors && json.errors[0] && json.errors[0].status && json.errors[0].status == 404) {
+        if (
+          json.errors &&
+          json.errors[0] &&
+          json.errors[0].status &&
+          json.errors[0].status == 404
+        ) {
           arrDeletedConversationIds.push(conversationId);
         }
       });
@@ -423,13 +549,17 @@ async function updateGoogleSheetCells(objCellsToUpdate) {
     }
 
     await sheet.saveUpdatedCells();
-    event_log("SUCCESS", "Google Sheets", "Update Cells", arrA1CellAddresses.join());
+    event_log(
+      "SUCCESS",
+      "Google Sheets",
+      "Update Cells",
+      "import: " + arrA1CellAddresses.join()
+    );
     return arrA1CellAddresses;
   } catch (e) {
     out.error("Caught Error");
     out.error(e.message);
   }
-
 }
 
 /**
@@ -449,8 +579,6 @@ async function createTagLookup() {
   return obj_tagLookup;
 }
 
-
-
 /* === DEBUGGING & EVENT LOG === */
 function debug(txt) {
   if (config.ENVIRONMENT.DEBUG_MODE) {
@@ -461,12 +589,12 @@ function debug(txt) {
 function event_log(status, resource, action, details) {
   const time = formatDateTime(new Date(Date.now()));
   arrEventLog.push({
-    "environment": config.ENVIRONMENT.NAME,
-    "time": time,
-    "status": status,
-    "resource": resource,
-    "action": action,
-    "details": details
+    environment: config.ENVIRONMENT.NAME,
+    time: time,
+    status: status,
+    resource: resource,
+    action: action,
+    details: details,
   });
 }
 
@@ -480,28 +608,32 @@ async function saveEventLog() {
     private_key: config.GOOGLE.PRIVATE_KEY,
   });
 
-
   try {
     await doc.loadInfo(); // load document properties and worksheets
     const sheet = doc.sheetsByTitle["event_log"]; // Load the "import" sheet into memory
 
-    await sheet.setHeaderRow(["environment", "time", "status", "resource", "action", "details"]);
+    await sheet.setHeaderRow([
+      "environment",
+      "time",
+      "status",
+      "resource",
+      "action",
+      "details",
+    ]);
 
     return await sheet.addRows(arrEventLog);
-
   } catch (e) {
     out.error("Error caught:");
     out.error(e.message);
   }
 }
 
-
 /* === FORMAT FUNCTIONS === */
 function formatTags(arrTagIds, obj_tagLookup) {
   let formattedTags = "";
   if (arrTagIds) {
     for (var tagId of arrTagIds) {
-      formattedTags += (formattedTags != "") ? "," : "";
+      formattedTags += formattedTags != "" ? "," : "";
       formattedTags += obj_tagLookup[tagId];
     }
   }
@@ -519,62 +651,113 @@ function formatDateTime(dt) {
 }
 
 /* === FETCH FUNCTIONS === */
-function kustomer_conversations_get() {
-  debug("kustomer_conversations_get()");
-  return fetch("https://osmosis.api.kustomerapp.com/v1/customers/searches/" + config.KUSTOMER.SAVED_SEARCH_ID + "/execution?page=1&pageSize=30&source=current-search-poller&include=customers%2CsatisfactionResponse&trackTotalHits=10000&client-request-id=93a57a32-f983-436c-917d-02bc337d9717", {
-    "headers": {
-      "accept": "application/json",
-      "accept-language": "en-US,en;q=0.9",
-      "content-type": "application/json",
-      "x-csrf-token": config.KUSTOMER.HEADER_CSRF_TOKEN,
-      "cookie": "_csrf=" + config.KUSTOMER.COOKIE_CSRF_TOKEN + "; x-kustomer-auth-token=" + config.KUSTOMER.API_KEY + ";",
-      "Referer": "https://osmosis.kustomerapp.com/",
-      "Referrer-Policy": "strict-origin-when-cross-origin"
-    },
-    "body": "{}",
-    "method": "POST"
-  });
+function kustomer_conversations_get_old() {
+  debug("kustomer_conversations_get_old()");
+  return fetch(
+    "https://osmosis.api.kustomerapp.com/v1/customers/searches/" +
+      config.KUSTOMER.SAVED_SEARCH_ID_OLD +
+      "/execution?page=1&pageSize=30&source=current-search-poller&include=customers%2CsatisfactionResponse&trackTotalHits=10000&client-request-id=93a57a32-f983-436c-917d-02bc337d9717",
+    {
+      headers: {
+        accept: "application/json",
+        "accept-language": "en-US,en;q=0.9",
+        "content-type": "application/json",
+        "x-csrf-token": config.KUSTOMER.HEADER_CSRF_TOKEN,
+        cookie:
+          "_csrf=" +
+          config.KUSTOMER.COOKIE_CSRF_TOKEN +
+          "; x-kustomer-auth-token=" +
+          config.KUSTOMER.API_KEY +
+          ";",
+        Referer: "https://osmosis.kustomerapp.com/",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+      },
+      body: "{}",
+      method: "POST",
+    }
+  );
+}
+
+function kustomer_conversations_get_all() {
+  debug("kustomer_conversations_get_all()");
+  return fetch(
+    "https://osmosis.api.kustomerapp.com/v1/customers/searches/" +
+      config.KUSTOMER.SAVED_SEARCH_ID_ALL +
+      "/execution?page=1&pageSize=0&source=current-search-poller&include=customers%2CsatisfactionResponse&trackTotalHits=10000&client-request-id=93a57a32-f983-436c-917d-02bc337d9717",
+    {
+      headers: {
+        accept: "application/json",
+        "accept-language": "en-US,en;q=0.9",
+        "content-type": "application/json",
+        "x-csrf-token": config.KUSTOMER.HEADER_CSRF_TOKEN,
+        cookie:
+          "_csrf=" +
+          config.KUSTOMER.COOKIE_CSRF_TOKEN +
+          "; x-kustomer-auth-token=" +
+          config.KUSTOMER.API_KEY +
+          ";",
+        Referer: "https://osmosis.kustomerapp.com/",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+      },
+      body: "{}",
+      method: "POST",
+    }
+  );
 }
 
 function kustomer_tags_get() {
   debug("kustomer_tags_get()");
-  return fetch("https://osmosis.api.kustomerapp.com/v1/tags?deleted=false&page=1&pageSize=50", {
-    "headers": {
-      "accept": "application/json",
-      "accept-language": "en-US,en;q=0.9",
-      "content-type": "application/json",
-      "x-csrf-token": config.KUSTOMER.HEADER_CSRF_TOKEN,
-      "cookie": "_csrf=" + config.KUSTOMER.COOKIE_CSRF_TOKEN + "; x-kustomer-auth-token=" + config.KUSTOMER.API_KEY + ";",
-      "Referer": "https://osmosis.kustomerapp.com/",
-      "Referrer-Policy": "strict-origin-when-cross-origin"
-    },
-    "body": null,
-    "method": "GET"
-  });
+  return fetch(
+    "https://osmosis.api.kustomerapp.com/v1/tags?deleted=false&page=1&pageSize=50",
+    {
+      headers: {
+        accept: "application/json",
+        "accept-language": "en-US,en;q=0.9",
+        "content-type": "application/json",
+        "x-csrf-token": config.KUSTOMER.HEADER_CSRF_TOKEN,
+        cookie:
+          "_csrf=" +
+          config.KUSTOMER.COOKIE_CSRF_TOKEN +
+          "; x-kustomer-auth-token=" +
+          config.KUSTOMER.API_KEY +
+          ";",
+        Referer: "https://osmosis.kustomerapp.com/",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+      },
+      body: null,
+      method: "GET",
+    }
+  );
 }
 
 function kustomer_conversation_deleteById(conversationId) {
   debug("kustomer_conversation_deleteById(conversationId)");
   debug("arg conversationId:");
   debug(conversationId);
-  return fetch('https://api.kustomerapp.com/v1/conversations/' + conversationId, {
-    method: 'DELETE',
-    headers: {
-      Accept: 'text/plain',
-      Authorization: 'Bearer ' + config.KUSTOMER.API_KEY
+  return fetch(
+    "https://api.kustomerapp.com/v1/conversations/" + conversationId,
+    {
+      method: "DELETE",
+      headers: {
+        Accept: "text/plain",
+        Authorization: "Bearer " + config.KUSTOMER.API_KEY,
+      },
     }
-  });
+  );
 }
 
 function kustomer_conversation_getById(conversationId) {
   debug("kustomer_conversation_getById(conversationId)");
   debug("arg conversationId:");
   debug(conversationId);
-  return fetch('https://api.kustomerapp.com/v1/conversations/' + conversationId, {
-    method: 'GET',
-    headers: {
-      Accept: 'text/plain',
-      Authorization: 'Bearer ' + config.KUSTOMER.API_KEY
+  return fetch(
+    "https://api.kustomerapp.com/v1/conversations/" + conversationId,
+    {
+      method: "GET",
+      headers: {
+        Accept: "text/plain",
+        Authorization: "Bearer " + config.KUSTOMER.API_KEY,
+      },
     }
-  });
+  );
 }
