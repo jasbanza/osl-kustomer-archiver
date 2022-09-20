@@ -269,13 +269,13 @@ async function recordUnarchivedTicketCountToGoogleSheets() {
     const sheet = doc.sheetsByTitle["OSL Helpdesk Stats"]; // Load the "import" sheet into memory
 
     // SELECT CELL
-    await sheet.loadCells("C20");
+    await sheet.loadCells("C7");
 
     // UPDATE CELLS
-    let cell = sheet.getCellByA1("C20");
+    let cell = sheet.getCellByA1("C7");
     cell.value = totalUnarchivedCount;
     out.info(
-      `Updating "Ticket Count: Less than 2 weeks old" ("OSL Helpdesk Stats" cell C20)...`
+      `Updating "Ticket Count: Less than 2 weeks old" ("OSL Helpdesk Stats" cell C7)...`
     );
 
     await sheet.saveUpdatedCells();
@@ -283,7 +283,7 @@ async function recordUnarchivedTicketCountToGoogleSheets() {
       "SUCCESS",
       "Google Sheets",
       "Update Cells",
-      "OSL Helpdesk Stats: C20"
+      "OSL Helpdesk Stats: C7"
     );
   } catch (e) {
     out.error("Caught Error");
