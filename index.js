@@ -188,6 +188,17 @@ async function getKustomerConversationMetadata() {
               }
             }
 
+            // add satisfaction rating & review message
+            if (raw.attributes.satisfactionLevel) {
+              if (raw.attributes.satisfactionLevel.rating) {
+                obj_formatted.rating = raw.attributes.satisfactionLevel.rating;
+              }
+              if (raw.attributes.satisfactionLevel.firstAnswer) {
+                obj_formatted.feedback =
+                  raw.attributes.satisfactionLevel.firstAnswer;
+              }
+            }
+
             // add custom tag properties
             let strTags = formatTags(raw.attributes.tags, obj_tagLookup);
             if (strTags !== "") {
@@ -315,6 +326,8 @@ async function doHeaders(sheet, arrConversations) {
       "channel",
       "createdAt",
       "endedAt",
+      "rating",
+      "feedback",
       "device",
       "reasonForSupport",
       "whichAssets",
